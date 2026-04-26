@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   runApp(MyApp());
@@ -22,16 +23,36 @@ class CounterScreen extends StatefulWidget {
 class _CounterScreenState extends State<CounterScreen> {
   int counter = 0;
 
+  @override
+  void initState() {
+    super.initState();
+    loadCounter();
+  }
+
+  void loadCounter() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      counter = prefs.getInt('counter') ?? 0;
+    });
+  }
+
+  void saveCounter() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs.setInt('counter', counter);
+  }
+
   void increaseCounter() {
     setState(() {
       counter++;
     });
+    saveCounter();
   }
 
   void decreaseCounter() {
     setState(() {
       counter--;
     });
+    saveCounter();
   }
 
   @override
@@ -66,7 +87,7 @@ class _CounterScreenState extends State<CounterScreen> {
                   child: Text("-"),
                 ),
               ],
-            )
+            ),
           ],
         ),
       ),
