@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 void main() {
   runApp(MyApp());
@@ -10,86 +11,94 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: CounterScreen(),
+      home: TodoApp(),
     );
   }
 }
 
-class CounterScreen extends StatefulWidget {
+class TodoApp extends StatefulWidget {
   @override
-  _CounterScreenState createState() => _CounterScreenState();
+  _TodoAppState createState() => _TodoAppState();
 }
 
-class _CounterScreenState extends State<CounterScreen> {
-  int counter = 0;
+class _TodoAppState extends State<TodoApp> {
+  TextEditingController controller = TextEditingController();
+  List<String> tasks = [];
 
   @override
   void initState() {
     super.initState();
-    loadCounter();
+    loadTasks();
   }
 
-  void loadCounter() async {
+  void loadTasks() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    setState(() {
-      counter = prefs.getInt('counter') ?? 0;
-    });
+    String? data = prefs.getString('tasks');
+
+    if (data != null) {
+      setState(() {
+        tasks = List<String>.from(jsonDecode(data));
+      });
+    }
   }
 
-  void saveCounter() async {
+  void saveTasks() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    prefs.setInt('counter', counter);
+    prefs.setString('tasks', jsonEncode(tasks));
   }
 
-  void increaseCounter() {
+  void addTask() {
     setState(() {
-      counter++;
+      tasks.add(controller.text);
+      controller.clear();
     });
-    saveCounter();
+    saveTasks();
   }
 
-  void decreaseCounter() {
+  void deleteTask(int index) {
     setState(() {
-      counter--;
+      tasks.removeAt(index);
     });
-    saveCounter();
+    saveTasks();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Counter App"),
+        title: Text("To-Do List App"),
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              "Counter Value:",
-              style: TextStyle(fontSize: 24),
+      body: Column(
+        children: [
+          Padding(
+            padding: EdgeInsets.all(10),
+            child: TextField(
+              controller: controller,
+              decoration: InputDecoration(
+                labelText: "Enter Task",
+                border: OutlineInputBorder(),
+              ),
             ),
-            Text(
-              "$counter",
-              style: TextStyle(fontSize: 40),
+          ),
+          ElevatedButton(
+            onPressed: addTask,
+            child: Text("Add Task"),
+          ),
+          Expanded(
+            child: ListView.builder(
+              itemCount: tasks.length,
+              itemBuilder: (context, index) {
+                return ListTile(
+                  title: Text(tasks[index]),
+                  trailing: IconButton(
+                    icon: Icon(Icons.delete),
+                    onPressed: () => deleteTask(index),
+                  ),
+                );
+              },
             ),
-            SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                ElevatedButton(
-                  onPressed: increaseCounter,
-                  child: Text("+"),
-                ),
-                SizedBox(width: 20),
-                ElevatedButton(
-                  onPressed: decreaseCounter,
-                  child: Text("-"),
-                ),
-              ],
-            ),
-          ],
-        ),
+          )
+        ],
       ),
     );
   }
